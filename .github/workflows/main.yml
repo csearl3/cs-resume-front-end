@@ -1,0 +1,22 @@
+name: Front End Workflow
+on:
+  push:
+    branches: main
+jobs:
+  deploy:
+    name: Upload to S3 bucket
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Check out repo onto runner
+        uses: actions/checkout@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::565173394051:role/github_actions_role
+          aws-region: us-east-1
+      - name: Copy files to the website with the AWS CLI
+        run: |
+          aws s3 sync . s3://cs-resume-dev
