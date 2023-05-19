@@ -19,4 +19,4 @@ jobs:
           aws-region: us-east-1
       - name: Copy files to the website with the AWS CLI
         run: |
-          aws s3 sync code/ s3://cs-resume-dev
+          aws s3 sync assets/ s3://cs-resume-dev
