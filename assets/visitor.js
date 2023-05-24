@@ -1,6 +1,6 @@
 /* Separate API resources to request respective Lambda functions */
-const uniqueApi = "https://a26mzduu4j.execute-api.us-east-1.amazonaws.com/dev/uniquelambda";
-const countApi = "https://a26mzduu4j.execute-api.us-east-1.amazonaws.com/dev/countlambda";
+const uniqueApi = "https://u7mjujn5xe.execute-api.us-east-1.amazonaws.com/prod/uniquelambda";
+const countApi = "https://u7mjujn5xe.execute-api.us-east-1.amazonaws.com/prod/countlambda";
 
 const options = {
 	method: "POST",
