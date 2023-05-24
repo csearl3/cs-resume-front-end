@@ -1,10 +1,12 @@
 name: Front End Workflow
+
 on:
   push:
-    branches: main
+    branches: test
+    
 jobs:
   deploy:
-    name: Upload to S3 bucket
+    name: Setup Dev Website
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -14,8 +16,17 @@ jobs:
         shell: bash
         
     steps:
-      - name: Check out repo onto runner
+      - name: Checkout front end
         uses: actions/checkout@v3
+        with:
+          path: front
+          
+      - name: Checkout back end
+        uses: actions/checkout@v3
+        with:
+          repository: csearl3/cs-resume-back-end
+          token: ${{ secrets.GH_PAT }}
+          path: back
         
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
@@ -25,15 +36,28 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::565173394051:role/github_actions_role
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_DEV }}
           aws-region: us-east-1
           
       - name: Terraform Init
         run: terraform init -input=false
         
       - name: Terraform Plan
-        run: terraform plan -destroy -out=destroy.tfplan -input=false
+        run: terraform plan -input=false
+        
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false
       
-#      - name: Copy files to the website with the AWS CLI
-#        run: |
-#          aws s3 sync assets/ s3://cs-resume-dev
+      - name: Copy files to bucket
+        run: |
+          aws s3 sync assets/ s3://cs-resume-dev
+          
+      - name: Delete all bucket objects
+        run: |
+          aws s3 rm s3://cs-resume-dev --recursive
+          
+      - name: Terraform Plan
+        run: terraform plan -destroy -out=destroy.tfplan -input=false
+        
+      - name: Terraform Destroy
+        run: terraform apply destroy.tfplan
