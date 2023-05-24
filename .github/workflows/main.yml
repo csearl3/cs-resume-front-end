@@ -1,1 +1,127 @@
+name: Front End Workflow
 
+on:
+  push:
+    branches: test
+  pull_request:
+    branches: main
+
+defaults:
+      run:
+        shell: bash
+
+jobs:
+  setup:
+    if: github.ref_name == 'test' && github.event_name == 'push'
+    name: Setup Dev Website
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+        
+    steps:
+      - name: Checkout front end
+        uses: actions/checkout@v3
+          
+      - name: Checkout back end
+        uses: actions/checkout@v3
+        with:
+          repository: csearl3/cs-resume-back-end
+          token: ${{ secrets.GH_PAT }}
+          path: ./backend
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_DEV }}
+          aws-region: us-east-1
+      
+      - name: Terraform Init
+        run: terraform init -input=false
+        working-directory: ./backend
+        
+      - name: Terraform Plan
+        run: terraform plan -input=false
+        working-directory: ./backend
+        
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false
+        working-directory: ./backend
+      
+      - name: Copy files to bucket
+        run: |
+          aws s3 sync assets/ s3://cs-resume-dev
+      
+  destroy:
+    if: github.ref_name == 'main' && github.event_name == 'pull_request'
+    name: Destroy Dev Website
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+        
+    steps:
+      - name: Checkout front end
+        uses: actions/checkout@v3
+          
+      - name: Checkout back end
+        uses: actions/checkout@v3
+        with:
+          repository: csearl3/cs-resume-back-end
+          token: ${{ secrets.GH_PAT }}
+          path: ./backend
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_DEV }}
+          aws-region: us-east-1
+        
+      - name: Delete all bucket objects
+        run: |
+          aws s3 rm s3://cs-resume-dev --recursive
+      
+      - name: Terraform Init
+        run: terraform init -input=false
+        working-directory: ./backend
+          
+      - name: Terraform Plan
+        run: terraform plan -destroy -out=destroy.tfplan -input=false
+        working-directory: ./backend
+        
+      - name: Terraform Destroy
+        run: terraform apply destroy.tfplan
+        working-directory: ./backend
+        
+  upload:
+    needs: destroy
+    if: github.ref_name == 'main' && github.event_name == 'pull_request'
+    name: Upload Prod Assets
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout front end
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_PROD }}
+          aws-region: us-east-1
+          
+      - name: Copy files to bucket
+        run: |
+          aws s3 sync assets/ s3://www.cs-resume.com
