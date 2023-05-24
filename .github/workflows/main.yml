@@ -37,19 +37,17 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_DEV }}
           aws-region: us-east-1
       
-      - name: Switch working directory
-        run: |
-          ls -d */
-          cd /backend
-      
       - name: Terraform Init
         run: terraform init -input=false
+        working-directory: ./backend
         
       - name: Terraform Plan
         run: terraform plan -input=false
+        working-directory: ./backend
         
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
+        working-directory: ./backend
       
       - name: Copy files to bucket
         run: |
@@ -61,6 +59,8 @@ jobs:
           
       - name: Terraform Plan
         run: terraform plan -destroy -out=destroy.tfplan -input=false
+        working-directory: ./backend
         
       - name: Terraform Destroy
         run: terraform apply destroy.tfplan
+        working-directory: ./backend
