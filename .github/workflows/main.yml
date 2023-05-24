@@ -58,7 +58,7 @@ jobs:
           aws s3 sync assets/ s3://cs-resume-dev
       
   destroy:
-    if: github.ref_name == 'main' && github.event_name == 'pull_request'
+    if: github.head_ref == 'test' && github.event_name == 'pull_request'
     name: Destroy Dev Website
     runs-on: ubuntu-latest
     permissions:
@@ -105,7 +105,7 @@ jobs:
         
   upload:
     needs: destroy
-    if: github.ref_name == 'main' && github.event_name == 'pull_request'
+    if: github.head_ref == 'test' && github.event_name == 'pull_request'
     name: Upload Prod Assets
     runs-on: ubuntu-latest
     permissions:
