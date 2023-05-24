@@ -18,15 +18,13 @@ jobs:
     steps:
       - name: Checkout front end
         uses: actions/checkout@v3
-        with:
-          path: front
           
       - name: Checkout back end
         uses: actions/checkout@v3
         with:
           repository: csearl3/cs-resume-back-end
           token: ${{ secrets.GH_PAT }}
-          path: back
+          path: ./backend
         
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
@@ -38,7 +36,12 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_DEV }}
           aws-region: us-east-1
-          
+      
+      - name: Switch working directory
+        run: |
+          ls -d */
+          cd /backend
+      
       - name: Terraform Init
         run: terraform init -input=false
         
